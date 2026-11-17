@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shape Search</title>
+    <link rel="icon" href="data:,">
+    <style>
+        :root {
+            --ink: #0f172a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --bg: #f1f5f9;
+            --blue: #2563eb;
+            --blue-dark: #1d4ed8;
+            --orange: #ea580c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+
+        header {
+            padding: 22px 28px 6px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 26px;
+            letter-spacing: -0.5px;
+        }
+
+        h2 {
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
+
+        h3 {
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .sub {
+            margin: 2px 0 0;
+            color: var(--muted);
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: minmax(380px, 580px) 1fr;
+            gap: 18px;
+            padding: 14px 28px 40px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+                padding: 12px 14px 40px;
+            }
+
+            header {
+                padding: 18px 14px 4px;
+            }
+        }
+
+        .panel {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+
+        h2.step {
+            margin-top: 20px;
+        }
+
+        @media (min-width: 901px) {
+            main>.panel:first-child {
+                position: sticky;
+                top: 12px;
+                max-height: calc(100vh - 24px);
+                overflow-y: auto;
+            }
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 16px;
+            margin-bottom: 12px;
+        }
+
+        .row .label {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        button {
+            font: inherit;
+            cursor: pointer;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: var(--ink);
+            padding: 7px 14px;
+            border-radius: 8px;
+        }
+
+        button:hover {
+            background: #f8fafc;
+        }
+
+        button.primary {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: #fff;
+            font-weight: 600;
+            padding: 9px 26px;
+        }
+
+        button.primary:hover {
+            background: var(--blue-dark);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .presets button {
+            padding: 4px 11px;
+            font-size: 13px;
+            border-radius: 999px;
+        }
+
+        select,
+        input[type=number] {
+            font: inherit;
+            padding: 4px 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+        }
+
+        input[type=number] {
+            width: 70px;
+        }
+
+        .plot {
+            margin-bottom: 14px;
+        }
+
+        .plot-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .plot-head label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .plot-head b {
+            font-size: 14px;
+        }
+
+        .plot.off canvas {
+            opacity: 0.35;
+        }
+
+        canvas.sketch {
+            display: block;
+            width: 100%;
+            height: 210px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            touch-action: none;
+            cursor: crosshair;
+            background: #fff;
+        }
+
+        .hint {
+            margin: -4px 0 12px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .anchor label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .error {
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        #results-summary {
+            margin-bottom: 12px;
+        }
+
+        .empty {
+            color: var(--muted);
+            padding: 30px 6px;
+            text-align: center;
+        }
+
+        .card {
+            display: grid;
+            grid-template-columns: 34px 1fr;
+            gap: 10px;
+            padding: 14px 0;
+            border-top: 1px solid var(--line);
+        }
+
+        .card:first-of-type {
+            border-top: 0;
+            padding-top: 4px;
+        }
+
+        .rank {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-weight: 700;
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+        }
+
+        .head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: baseline;
+        }
+
+        .head h3 {
+            overflow-wrap: anywhere;
+        }
+
+        .score {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+
+        .bar {
+            height: 6px;
+            background: var(--line);
+            border-radius: 3px;
+            margin: 4px 0 6px;
+            overflow: hidden;
+        }
+
+        .bar>div {
+            height: 100%;
+            background: var(--blue);
+            border-radius: 3px;
+        }
+
+        .meta {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .meta b {
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .mini {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        canvas.mini-plot {
+            display: block;
+            width: 100%;
+            height: 84px;
+            border-radius: 6px;
+        }
+
+        audio {
+            width: 100%;
+            height: 34px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .legend i {
+            display: inline-block;
+            width: 22px;
+            vertical-align: middle;
+            margin-right: 5px;
+            border-top: 2px solid #94a3b8;
+        }
+
+        .legend i.dashed {
+            border-top-style: dashed;
+        }
+
+        .legend i.solid {
+            border-top-color: var(--blue);
+            border-top-width: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Shape Search</h1>
+        <p class="sub">Sketch how the music should rise and fall, and find stretches of songs that match.</p>
+        <p id="status" class="muted">Connecting&hellip;</p>
+    </header>
+
+    <main>
+        <section class="panel">
+            <h2>1. Draw a shape</h2>
+            <div class="row">
+                <span class="label">Start from</span>
+                <div id="presets" class="presets"></div>
+            </div>
+            <div class="row">
+                <label>Length of the stretch
+                    <input id="duration" type="range" min="10" max="60" step="1" value="30">
+                    <b id="duration-label">30 s</b>
+                </label>
+            </div>
+            <div id="plots"></div>
+            <p class="hint">Click a plot to add a point &middot; drag a point to move it &middot; double-click a point
+                to remove it.</p>
+            <div class="row anchor">
+                <label><input type="checkbox" id="anchor-on"> Pin a sudden moment</label>
+                <span><input type="number" id="anchor-time" min="0" max="30" step="0.5" value="10"> seconds in</span>
+            </div>
+            <p id="anchor-help" class="hint" hidden>The orange line marks it. Only stretches where the song has a
+                detected sudden jump at that moment are returned.</p>
+
+            <h2 class="step">2. Search</h2>
+            <div class="row">
+                <label>Timing
+                    <select id="method">
+                        <option value="dtw">Flexible (DTW)</option>
+                        <option value="euclidean">Strict (baseline)</option>
+                    </select>
+                </label>
+                <label>Results
+                    <select id="top-k">
+                        <option>5</option>
+                        <option selected>10</option>
+                        <option>20</option>
+                    </select>
+                </label>
+            </div>
+            <div class="row">
+                <button id="search" class="primary">Search</button>
+                <button id="reset">New search</button>
+            </div>
+            <div id="error" class="error" hidden></div>
+        </section>
+
+        <section class="panel">
+            <h2>Results</h2>
+            <div id="results-summary" class="muted"></div>
+            <div id="results">
+                <div class="empty">Draw a shape and press Search. Matches will appear here.</div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        "use strict";
+
+        // ---------------------------------------------------------------- helpers
+        const $ = (id) => document.getElementById(id);
+        const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+        const mmss = (s) => { s = Math.round(s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+        function el(tag, props, ...children) {
+            const node = document.createElement(tag);
+            for (const [key, value] of Object.entries(props || {})) {
+                if (key === "class") node.className = value;
+                else if (key === "text") node.textContent = value;
+                else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+                else node.setAttribute(key, value);
+            }
+            for (const child of children) node.append(child);
+            return node;
+        }
+
+        // How each feature is shown. Anything not listed here still works, with generic labels.
+        const FEATURE_STYLE = {
+            loudness: { title: "Loudness", low: "quiet", high: "loud", color: "#2563eb" },
+            brightness: { title: "Brightness", low: "dark", high: "bright", color: "#d97706" },
+        };
+        const styleFor = (name) => FEATURE_STYLE[name] || { title: name, low: "low", high: "high", color: "#475569" };
+
+        // Shapes to start from: [fraction of the way through, height 0-1]
+        const PRESETS = {
+            "Build then peak": { loudness: [[0, .1], [.67, .9], [1, .9]], brightness: [[0, .2], [.67, .8], [1, .8]] },
+            "Sudden drop": { loudness: [[0, .1], [.33, .1], [.37, .9], [1, .9]], brightness: [[0, .2], [.33, .2], [.37, .85], [1, .85]] },
+            "Fade out": { loudness: [[0, .9], [1, .1]], brightness: [[0, .8], [1, .3]] },
+            "Rise and fall": { loudness: [[0, .1], [.5, .9], [1, .1]], brightness: [[0, .2], [.5, .8], [1, .2]] },
+            "Steady": { loudness: [[0, .5], [1, .5]], brightness: [[0, .5], [1, .5]] },
+        };
+        const DEFAULT_PRESET = "Build then peak";
+        const MIN_GAP = 0.3;     // seconds between two points
+
+        // ------------------------------------------------------------------ state
+        const state = { duration: 30, anchorOn: false, anchorTime: 10, features: {} };
+        let info = null;
+        let drag = null;
+        let overlayJobs = [];
+        let lastData = null;
+
+        function applyPreset(key) {
+            for (const [name, f] of Object.entries(state.features)) {
+                const shape = (PRESETS[key] && PRESETS[key][name]) || [[0, .5], [1, .5]];
+                f.points = shape.map(([frac, h]) => [frac * state.duration, h]);
+            }
+            drawAllSketches();
+        }
+
+        function setDuration(seconds) {
+            const old = state.duration;
+            state.duration = seconds;
+            for (const f of Object.values(state.features)) {
+                f.points = f.points.map(([t, v], i) => [i === f.points.length - 1 ? seconds : t * seconds / old, v]);
+            }
+            state.anchorTime = clamp(state.anchorTime, 0, seconds);
+            $("anchor-time").max = seconds;
+            $("anchor-time").value = state.anchorTime;
+            $("duration-label").textContent = seconds + " s";
+            drawAllSketches();
+        }
+
+        // ------------------------------------------------------- the drawing plots
+        const geometry = (canvas) => ({ l: 58, r: 14, t: 12, b: 46, w: canvas.clientWidth, h: canvas.clientHeight });
+
+        function prepare(canvas) {
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+                canvas.width = Math.round(w * dpr);
+                canvas.height = Math.round(h * dpr);
+            }
+            const ctx = canvas.getContext("2d");
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            return ctx;
+        }
+
+        function drawSketch(name) {
+            const f = state.features[name], canvas = f.canvas, style = styleFor(name);
+            const ctx = prepare(canvas), g = geometry(canvas);
+            const X = (t) => g.l + (t / state.duration) * (g.w - g.l - g.r);
+            const Y = (v) => g.t + (1 - v) * (g.h - g.t - g.b);
+            ctx.clearRect(0, 0, g.w, g.h);
+            ctx.font = "12px system-ui, sans-serif";
+
+            ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 1; ctx.fillStyle = "#64748b";
+            for (const v of [0, .25, .5, .75, 1]) {
+                ctx.beginPath(); ctx.moveTo(g.l, Y(v)); ctx.lineTo(g.w - g.r, Y(v)); ctx.stroke();
+            }
+            const step = state.duration <= 20 ? 2 : state.duration <= 40 ? 5 : 10;
+            ctx.textAlign = "center"; ctx.textBaseline = "top";
+            for (let t = 0; t <= state.duration + 1e-9; t += step) {
+                ctx.beginPath(); ctx.moveTo(X(t), g.t); ctx.lineTo(X(t), g.h - g.b); ctx.stroke();
+                ctx.fillText(String(t), X(t), g.h - g.b + 6);
+            }
+            ctx.fillText("time in the sketch (seconds)", (g.l + g.w - g.r) / 2, g.h - 18);
+            ctx.textAlign = "right"; ctx.textBaseline = "middle";
+            ctx.fillText(style.high, g.l - 8, Y(1));
+            ctx.fillText(style.low, g.l - 8, Y(0));
+
+            if (state.anchorOn) {
+                ctx.save();
+                ctx.strokeStyle = "#ea580c"; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+                ctx.beginPath(); ctx.moveTo(X(state.anchorTime), g.t); ctx.lineTo(X(state.anchorTime), g.h - g.b); ctx.stroke();
+                ctx.restore();
+                ctx.fillStyle = "#ea580c"; ctx.textAlign = state.anchorTime > state.duration * 0.8 ? "right" : "left"; ctx.textBaseline = "top";
+                ctx.fillText(" pinned ", X(state.anchorTime), g.t + 2);
+            }
+
+            ctx.strokeStyle = style.color; ctx.lineWidth = 2.5; ctx.lineJoin = "round";
+            ctx.beginPath();
+            f.points.forEach(([t, v], i) => (i ? ctx.lineTo(X(t), Y(v)) : ctx.moveTo(X(t), Y(v))));
+            ctx.stroke();
+            for (const [t, v] of f.points) {
+                ctx.beginPath(); ctx.arc(X(t), Y(v), 6, 0, Math.PI * 2);
+                ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = style.color; ctx.stroke();
+            }
+        }
+
+        function drawAllSketches() { for (const name of Object.keys(state.features)) drawSketch(name); }
+
+        function toData(canvas, px, py) {
+            const g = geometry(canvas);
+            return {
+                t: clamp((px - g.l) / (g.w - g.l - g.r) * state.duration, 0, state.duration),
+                v: clamp(1 - (py - g.t) / (g.h - g.t - g.b), 0, 1),
+                inside: px >= g.l - 4 && px <= g.w - g.r + 4 && py >= g.t - 6 && py <= g.h - g.b + 6,
+            };
+        }
+
+        function nearestPoint(name, px, py) {
+            const f = state.features[name], g = geometry(f.canvas);
+            let best = -1, bestDist = 13;
+            f.points.forEach(([t, v], i) => {
+                const x = g.l + (t / state.duration) * (g.w - g.l - g.r), y = g.t + (1 - v) * (g.h - g.t - g.b);
+                const d = Math.hypot(x - px, y - py);
+                if (d < bestDist) { best = i; bestDist = d; }
+            });
+            return best;
+        }
+
+        function wireCanvas(name) {
+            const canvas = state.features[name].canvas;
+            const pos = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+
+            canvas.addEventListener("pointerdown", (e) => {
+                const f = state.features[name], { x, y } = pos(e);
+                let i = nearestPoint(name, x, y);
+                if (i < 0) {
+                    const d = toData(canvas, x, y);
+                    if (!d.inside || f.points.some(([t]) => Math.abs(t - d.t) < MIN_GAP)) return;
+                    f.points.push([d.t, d.v]);
+                    f.points.sort((a, b) => a[0] - b[0]);
+                    i = f.points.findIndex(([t]) => t === d.t);
+                }
+                drag = { name, i };
+                canvas.setPointerCapture(e.pointerId);
+                drawSketch(name);
+            });
+
+            canvas.addEventListener("pointermove", (e) => {
+                const f = state.features[name], { x, y } = pos(e);
+                if (!drag || drag.name !== name) {
+                    canvas.style.cursor = nearestPoint(name, x, y) >= 0 ? "grab" : "crosshair";
+                    return;
+                }
+                const d = toData(canvas, x, y), last = f.points.length - 1, i = drag.i;
+                let t = f.points[i][0];
+                if (i === 0) t = 0;
+                else if (i === last) t = state.duration;
+                else t = clamp(d.t, f.points[i - 1][0] + MIN_GAP, f.points[i + 1][0] - MIN_GAP);
+                f.points[i] = [t, d.v];
+                canvas.style.cursor = "grabbing";
+                drawSketch(name);
+            });
+
+            const stop = () => { drag = null; };
+            canvas.addEventListener("pointerup", stop);
+            canvas.addEventListener("pointercancel", stop);
+
+            canvas.addEventListener("dblclick", (e) => {
+                const f = state.features[name], { x, y } = pos(e), i = nearestPoint(name, x, y);
+                if (i > 0 && i < f.points.length - 1) { f.points.splice(i, 1); drawSketch(name); }
+            });
+        }
+
+        // ------------------------------------------------------------ build the page
+        function buildPlots() {
+            const holder = $("plots");
+            holder.replaceChildren();
+            for (const feature of info.features) {
+                const name = feature.name, style = styleFor(name);
+                const toggle = el("input", { type: "checkbox", checked: "" });
+                const weight = el("input", { type: "range", min: "1", max: "5", value: "3", style: "width:90px" });
+                const canvas = el("canvas", { class: "sketch" });
+                const box = el("div", { class: "plot" },
+                    el("div", { class: "plot-head" },
+                        el("label", {}, toggle, el("b", { text: style.title })),
+                        el("label", {}, "importance", weight)),
+                    canvas);
+                holder.append(box);
+                state.features[name] = { on: true, weight: 3, points: [], canvas, box };
+                toggle.addEventListener("change", () => { state.features[name].on = toggle.checked; box.classList.toggle("off", !toggle.checked); });
+                weight.addEventListener("input", () => { state.features[name].weight = Number(weight.value); });
+                wireCanvas(name);
+            }
+        }
+
+        function buildPresets() {
+            const holder = $("presets");
+            for (const key of Object.keys(PRESETS)) holder.append(el("button", { text: key, onclick: () => applyPreset(key) }));
+        }
+
+        function resetAll() {
+            state.anchorOn = false;
+            $("anchor-on").checked = false;
+            $("anchor-help").hidden = true;
+            state.anchorTime = 10;
+            $("anchor-time").value = 10;
+            $("method").value = "dtw";
+            $("top-k").value = "10";
+            $("duration").value = 30;
+            state.duration = 30;
+            $("duration-label").textContent = "30 s";
+            $("anchor-time").max = 30;
+            for (const f of Object.values(state.features)) {
+                f.on = true; f.weight = 3;
+                f.box.classList.remove("off");
+                f.box.querySelector("input[type=checkbox]").checked = true;
+                f.box.querySelector("input[type=range]").value = 3;
+            }
+            applyPreset(DEFAULT_PRESET);
+            clearResults();
+            hideError();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        // ------------------------------------------------------------------- search
+        function buildQuery() {
+            const features = {};
+            for (const [name, f] of Object.entries(state.features)) {
+                if (!f.on) continue;
+                features[name] = {
+                    points: f.points.map(([t, v]) => [Math.round(t * 100) / 100, Math.round(v * 1000) / 1000]),
+                    weight: f.weight,
+                };
+            }
+            if (!Object.keys(features).length) throw new Error("Turn on at least one feature (loudness or brightness) to search with.");
+            const query = { features, duration_s: state.duration, top_k: Number($("top-k").value) };
+            if (state.anchorOn) { query.mode = "anchored"; query.anchors_s = [Math.round(clamp(state.anchorTime, 0, state.duration) * 100) / 100]; }
+            return query;
+        }
+
+        function showError(message) { const box = $("error"); box.textContent = message; box.hidden = false; }
+        function hideError() { $("error").hidden = true; }
+
+        function clearResults() {
+            overlayJobs = []; lastData = null;
+            $("results-summary").textContent = "";
+            $("results").replaceChildren(el("div", { class: "empty", text: "Draw a shape and press Search. Matches will appear here." }));
+        }
+
+        async function runSearch() {
+            hideError();
+            let query;
+            try { query = buildQuery(); } catch (err) { showError(err.message); return; }
+            const button = $("search");
+            button.disabled = true; button.textContent = "Searching…";
+            try {
+                const response = await fetch("/api/search", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ query, method: $("method").value }),
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) { showError(typeof data.detail === "string" ? data.detail : "The search failed (" + response.status + ")."); return; }
+                renderResults(data);
+            } catch (err) {
+                showError("Could not reach the server: " + err.message);
+            } finally {
+                button.disabled = false; button.textContent = "Search";
+            }
+        }
+
+        // ------------------------------------------------------------------ results
+        function drawOverlay(canvas, sketch, match, style, title) {
+            const ctx = prepare(canvas), w = canvas.clientWidth, h = canvas.clientHeight, pad = 7, top = 20;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = "#f8fafc"; ctx.fillRect(0, 0, w, h);
+            const line = (values, color, dash, width) => {
+                ctx.beginPath();
+                values.forEach((v, i) => {
+                    const x = pad + (i / Math.max(1, values.length - 1)) * (w - 2 * pad), y = top + (1 - clamp(v, 0, 1)) * (h - top - pad);
+                    if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+                });
+                ctx.setLineDash(dash); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = "round"; ctx.stroke(); ctx.setLineDash([]);
+            };
+            line(sketch, "#94a3b8", [5, 4], 2);
+            line(match, style.color, [], 2.5);
+            ctx.fillStyle = "#334155"; ctx.font = "600 11px system-ui, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+            ctx.fillText(title, 7, 4);
+        }
+
+        function drawAlignment(canvas, path) {
+            const ctx = prepare(canvas), w = canvas.clientWidth, h = canvas.clientHeight, pad = 7, top = 20;
+            const m = path[path.length - 1][0] + 1, n = path[path.length - 1][1] + 1;
+            const X = (i) => pad + (i / Math.max(1, m - 1)) * (w - 2 * pad), Y = (j) => top + (1 - j / Math.max(1, n - 1)) * (h - top - pad);
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = "#f8fafc"; ctx.fillRect(0, 0, w, h);
+            ctx.strokeStyle = "#cbd5e1"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+            ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(m - 1), Y(n - 1)); ctx.stroke(); ctx.setLineDash([]);
+            ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 2; ctx.beginPath();
+            path.forEach(([i, j], k) => (k ? ctx.lineTo(X(i), Y(j)) : ctx.moveTo(X(i), Y(j))));
+            ctx.stroke();
+            ctx.fillStyle = "#334155"; ctx.font = "600 11px system-ui, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+            ctx.fillText("how it lined up", 7, 4);
+        }
+
+        function renderResult(r, rank) {
+            const body = el("div", {},
+                el("div", { class: "head" }, el("h3", { text: r.title }), el("div", { class: "score", text: String(Math.round(r.overall_score)) })),
+                el("div", { class: "bar" }, el("div", { style: "width:" + clamp(r.overall_score, 0, 100) + "%" })));
+
+            const meta = el("div", { class: "meta" });
+            meta.append(el("b", { text: mmss(r.start_s) + " – " + mmss(r.end_s) }), " in the song");
+            for (const [name, score] of Object.entries(r.feature_scores)) meta.append(" · " + styleFor(name).title.toLowerCase() + " " + Math.round(score));
+            for (const a of r.anchors || []) meta.append(" · sudden moment at " + mmss(a.hit_time_s) + " (" + a.hit_strength.toFixed(1) + " LU jump)");
+            body.append(meta);
+
+            const mini = el("div", { class: "mini" });
+            for (const [name, curve] of Object.entries(r.curves)) {
+                const canvas = el("canvas", { class: "mini-plot" });
+                mini.append(canvas);
+                overlayJobs.push(() => drawOverlay(canvas, lastData.sketch[name], curve, styleFor(name), styleFor(name).title + " " + Math.round(r.feature_scores[name])));
+            }
+            if (r.path && r.path.length) {
+                const canvas = el("canvas", { class: "mini-plot" });
+                mini.append(canvas);
+                overlayJobs.push(() => drawAlignment(canvas, r.path));
+            }
+            body.append(mini);
+
+            const player = el("audio", { controls: "", preload: "none", src: "/api/audio/" + r.track_id + "?start=" + r.start_s + "&end=" + r.end_s });
+            player.addEventListener("play", () => document.querySelectorAll("audio").forEach((a) => { if (a !== player) a.pause(); }));
+            body.append(player);
+
+            return el("article", { class: "card" }, el("div", { class: "rank", text: String(rank) }), body);
+        }
+
+        function renderResults(data) {
+            lastData = data; overlayJobs = [];
+            const weights = Object.entries(data.weights).filter(([, w]) => w > 0).map(([n, w]) => styleFor(n).title.toLowerCase() + " " + Math.round(w * 100) + "%").join(", ");
+            $("results-summary").replaceChildren(
+                el("div", {
+                    text: data.results.length + " result" + (data.results.length === 1 ? "" : "s") + " in " + data.search_time_s.toFixed(2) + " s · " +
+                        (data.method === "dtw" ? "flexible timing" : "strict timing") + (data.mode === "anchored" ? " · pinned moment" : "") + " · using " + weights
+                }),
+                el("div", { class: "legend" },
+                    el("span", {}, el("i", { class: "dashed" }), "your sketch"),
+                    el("span", {}, el("i", { class: "solid" }), "the music"),
+                    el("span", { text: "both rescaled, so shape is compared and not volume" })));
+
+            if (!data.results.length) {
+                const why = data.mode === "anchored"
+                    ? "No song has a detected sudden jump at that moment. Try moving the pinned time, or turn the pinned moment off."
+                    : "Nothing matched. Try a shorter stretch.";
+                $("results").replaceChildren(el("div", { class: "empty", text: why }));
+                return;
+            }
+            $("results").replaceChildren(...data.results.map((r, i) => renderResult(r, i + 1)));
+            requestAnimationFrame(() => overlayJobs.forEach((job) => job()));
+            if (window.innerWidth <= 900) $("results").scrollIntoView({ behavior: "smooth" });
+        }
+
+        // -------------------------------------------------------------------- start
+        async function start() {
+            try {
+                info = await (await fetch("/api/info")).json();
+            } catch (err) {
+                $("status").textContent = "Cannot reach the server. Is it running?";
+                return;
+            }
+            if (!info.tracks) $("status").textContent = "The database has no tracks yet (run scripts/build_db.py --load).";
+            else $("status").textContent = info.tracks + " tracks loaded · searching by " + info.features.map((f) => f.name).join(" and ");
+            buildPlots();
+            buildPresets();
+            applyPreset(DEFAULT_PRESET);
+
+            $("duration").addEventListener("input", () => setDuration(Number($("duration").value)));
+            $("anchor-on").addEventListener("change", () => {
+                state.anchorOn = $("anchor-on").checked;
+                $("anchor-help").hidden = !state.anchorOn;
+                drawAllSketches();
+            });
+            $("anchor-time").addEventListener("input", () => {
+                const value = Number($("anchor-time").value);
+                state.anchorTime = clamp(Number.isFinite(value) ? value : 0, 0, state.duration);
+                drawAllSketches();
+            });
+            $("search").addEventListener("click", runSearch);
+            $("reset").addEventListener("click", resetAll);
+            window.addEventListener("resize", () => { drawAllSketches(); overlayJobs.forEach((job) => job()); });
+        }
+        start();
+    </script>
+</body>
+
+</html>

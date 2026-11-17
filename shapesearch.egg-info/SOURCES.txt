@@ -1,0 +1,6 @@
+README.md
+pyproject.toml
+shapesearch.egg-info/PKG-INFO
+shapesearch.egg-info/SOURCES.txt
+shapesearch.egg-info/dependency_links.txt
+shapesearch.egg-info/top_level.txt
