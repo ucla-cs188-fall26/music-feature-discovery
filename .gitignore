@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+
+# Large and regenerable
+data/*
+*.wav
+*.flac
+*.mp3
+*.db
+
+!data/manifest.csv
+!data/ground_truth.csv
